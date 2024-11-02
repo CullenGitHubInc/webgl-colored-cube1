@@ -5,7 +5,7 @@ if (!gl) {
     alert("WebGL not supported. Please use a compatible browser.");
 }
 
-// Vertex shader program
+// this allows for the vertex shader
 const vertexShaderSource = `
     attribute vec4 aPosition;
     attribute vec4 aColor;
@@ -19,12 +19,14 @@ const vertexShaderSource = `
     }
 `;
 
-// this is adding fragment shader program
+// this is the fragment shader
 const fragmentShaderSource = `
+    precision mediump float;
     varying lowp vec4 vColor;
+    uniform vec4 uColor;
 
     void main(void) {
-        gl_FragColor = vColor;
+        gl_FragColor = vColor * uColor; // Multiply base color with dynamic color
     }
 `;
 
@@ -65,21 +67,29 @@ const programInfo = {
     uniformLocations: {
         projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
         modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
+        uColor: gl.getUniformLocation(shaderProgram, 'uColor'),
     },
 };
 
+// this code establishes the vertex positions and colors on each vertex of a 3D cube
 const positions = new Float32Array([
-    // this adds the vertex positions and also the colors for each cube face
-    -1.0, -1.0,  1.0,  1.0, 0.0, 0.0,  // Red face
-    1.0, -1.0,  1.0,  1.0, 0.0, 0.0,
-    1.0,  1.0,  1.0,  1.0, 0.0, 0.0,
-    -1.0,  1.0,  1.0,  1.0, 0.0, 0.0,
-    // adding positions and colors
+    // Front face (turquoise)
+    -1.0, -1.0,  1.0,  0.0, 1.0, 1.0,
+    1.0, -1.0,  1.0,  0.0, 1.0, 1.0,
+    1.0,  1.0,  1.0,  0.0, 1.0, 1.0,
+    -1.0,  1.0,  1.0,  0.0, 1.0, 1.0,
+    // this is the back face to show other colors
+    -1.0, -1.0, -1.0, 1.0, 0.0, 0.0,
+    1.0, -1.0, -1.0, 1.0, 0.0, 0.0,
+    1.0,  1.0, -1.0, 1.0, 0.0, 0.0,
+    -1.0,  1.0, -1.0, 1.0, 0.0, 0.0,
+    // Other faces...
 ]);
 
 const indices = new Uint16Array([
-    0, 1, 2,    0, 2, 3,    // Front face
-    // adding indices for other faces
+    0, 1, 2,    0, 2, 3,    // front face
+    4, 5, 6,    4, 6, 7,    // back face
+    // here we are adding indices for other faces
 ]);
 
 function initBuffers(gl) {
@@ -95,6 +105,14 @@ function initBuffers(gl) {
 }
 
 const buffers = initBuffers(gl);
+
+function getDynamicColor() {
+    const time = Date.now() * 0.001;
+    const red = (Math.sin(time) + 1) / 2;
+    const green = (Math.cos(time) + 1) / 2;
+    const blue = (Math.sin(time * 0.5) + 1) / 2;
+    return [red, green, blue, 1.0];
+}
 
 function drawScene(gl, programInfo, buffers) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -112,6 +130,9 @@ function drawScene(gl, programInfo, buffers) {
     gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
     gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
 
+    const dynamicColor = getDynamicColor();
+    gl.uniform4fv(programInfo.uniformLocations.uColor, dynamicColor);
+
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 6 * 4, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
@@ -127,3 +148,6 @@ function render() {
     requestAnimationFrame(render);
 }
 render();
+
+
+
